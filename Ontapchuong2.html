@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn Tập Chương 2 - PR & Giải Trí</title>
+    <!-- Thư viện tạo hiệu ứng pháo hoa -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6C5CE7;
+            --secondary: #a29bfe;
+            --success: #00b894;
+            --error: #ff7675;
+            --background: #dfe6e9;
+            --text: #2d3436;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Container chính */
+        .app-container {
+            background: var(--white);
+            width: 100%;
+            max-width: 800px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        /* Màn hình Chào mừng (Menu) */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .chapter-card {
+            background: linear-gradient(45deg, #6C5CE7, #a29bfe);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 15px rgba(108, 92, 231, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .chapter-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 25px rgba(108, 92, 231, 0.4);
+        }
+
+        .chapter-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chapter-desc {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* Màn hình Câu hỏi */
+        #quiz-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            flex: 1;
+        }
+
+        /* Header Quiz */
+        .quiz-header {
+            padding: 20px;
+            background: #f1f2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-home {
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-home:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Thanh tiến độ */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #dfe6e9;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00b894, #00cec9);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* Nội dung câu hỏi */
+        .question-area {
+            padding: 30px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #dfe6e9;
+            padding: 15px 20px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 1.1rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: #f8f7ff;
+        }
+
+        /* Trạng thái đúng/sai */
+        .option-btn.correct {
+            background: #dff9fb;
+            border-color: var(--success);
+            color: #00947e;
+        }
+
+        .option-btn.wrong {
+            background: #ffeaa7;
+            border-color: var(--error);
+            color: #d63031;
+        }
+
+        /* Khu vực giải thích */
+        .feedback-area {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-area.success {
+            background: #e3f9e5;
+            border-left: 5px solid var(--success);
+        }
+
+        .feedback-area.error {
+            background: #ffe3e3;
+            border-left: 5px solid var(--error);
+        }
+
+        .feedback-title {
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .feedback-content {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Nút tiếp theo */
+        .btn-next {
+            margin-top: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            float: right;
+            box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+            display: none;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(108, 92, 231, 0.4);
+        }
+
+        /* Màn hình kết quả */
+        #result-screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .app-container {
+                border-radius: 0;
+                height: 100vh;
+                max-height: none;
+            }
+            .question-text {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- START SCREEN -->
+        <div id="start-screen">
+            <h1 style="color: var(--text); margin-bottom: 30px;">Ôn Tập Giải Trí & PR</h1>
+            <div class="chapter-card" onclick="startQuiz()">
+                <div class="chapter-title">Chương 2</div>
+                <div class="chapter-desc">Kế hoạch PR, Phân khúc khán giả & Kể chuyện với Media Releases</div>
+                <div style="margin-top: 20px; font-size: 0.9rem;">⭐ 30 Câu hỏi • 🎯 Trắc nghiệm</div>
+            </div>
+        </div>
+
+        <!-- QUIZ SCREEN -->
+        <div id="quiz-screen">
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            
+            <div class="quiz-header">
+                <button class="btn-home" onclick="goHome()">🏠 Trang chủ</button>
+                <div style="font-weight: 700; color: #636e72;">Câu <span id="current-q">1</span>/30</div>
+            </div>
+
+            <div class="question-area">
+                <div class="question-text" id="question-text">Đang tải câu hỏi...</div>
+                <div class="options-grid" id="options-grid">
+                    <!-- Options will be injected here -->
+                </div>
+
+                <div class="feedback-area" id="feedback">
+                    <div class="feedback-title" id="feedback-title"></div>
+                    <div class="feedback-content" id="feedback-content"></div>
+                </div>
+
+                <button class="btn-next" id="btn-next" onclick="nextQuestion()">Câu tiếp theo ➜</button>
+            </div>
+        </div>
+
+        <!-- RESULT SCREEN -->
+        <div id="result-screen">
+            <div class="score-circle" id="final-score">0</div>
+            <h2 style="margin-bottom: 10px;">Hoàn thành!</h2>
+            <p style="margin-bottom: 30px; color: #636e72;">Bạn đã hoàn thành phần ôn tập Chương 2.</p>
+            <button class="btn-home" style="background: var(--primary); color: white; border: none; padding: 15px 30px;" onclick="goHome()">Làm lại từ đầu</button>
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu 30 câu hỏi từ Chương 2
+        const questions = [
+            {
+                q: "Ba loại phân đoạn khán giả chính được sử dụng trong quan hệ công chúng (PR) là gì?",
+                options: ["Tuổi tác, Giới tính, Thu nhập", "Nhân khẩu học, Tâm lý học, Địa lý", "Thành thị, Nông thôn, Quốc tế", "Fan hâm mộ, Người ghét, Người trung lập"],
+                correct: 1,
+                explain: "Theo tài liệu, các danh mục phân đoạn chính cho PR là Nhân khẩu học (Demographics), Tâm lý học (Psychographics) và Địa lý (Geographics)."
+            },
+            {
+                q: "Phương pháp phân đoạn khán giả chính cho PHIM (Film) dựa trên yếu tố nào?",
+                options: ["Thu nhập và nghề nghiệp", "Địa lý và lối sống", "Độ tuổi và giới tính", "Trình độ học vấn"],
+                correct: 2,
+                explain: "Phân đoạn chính cho phim dựa trên các danh mục nhân khẩu học là độ tuổi và giới tính (Age and Gender)."
+            },
+            {
+                q: "Hệ thống xếp hạng nào được sử dụng để phân đoạn khán giả cho TRUYỀN HÌNH (TV)?",
+                options: ["Billboard Ratings", "Nielsen Ratings", "IMDb Ratings", "Rotten Tomatoes"],
+                correct: 1,
+                explain: "Phân đoạn khán giả cho truyền hình tuân theo xếp hạng Nielsen (Nielsen ratings)."
+            },
+            {
+                q: "Trong xếp hạng truyền hình, HUT là viết tắt của từ gì?",
+                options: ["Homes Using Technology", "Humans Using TV", "Households Using Television", "Heavy Usage Time"],
+                correct: 2,
+                explain: "HUT là viết tắt của 'Households Using Television' (Hộ gia đình sử dụng tivi), dùng để tính thị phần khán giả."
+            },
+            {
+                q: "Đâu là ví dụ về phân đoạn Tâm lý học (Psychographic) cho phim?",
+                options: ["Nam giới từ 18-24 tuổi", "Người sống ở New York", "Fan của ngôi sao hoặc thể loại phim", "Phụ nữ có thu nhập cao"],
+                correct: 2,
+                explain: "Phân đoạn tâm lý học bao gồm: Fan của ngôi sao nam/nữ, Fan của đạo diễn, Fan của thể loại, hoặc Fan của nguyên tác."
+            },
+            {
+                q: "Chân dung khách hàng (Buyer Persona) là gì?",
+                options: ["Một khách hàng thực tế đã mua vé", "Tiểu sử ngắn về một 'người' hư cấu đại diện cho một phân đoạn khán giả", "Danh sách email của tất cả khách hàng", "Hồ sơ của đạo diễn phim"],
+                correct: 1,
+                explain: "Buyer persona là một tiểu sử ngắn của một 'người' hư cấu hoặc tổng hợp đại diện cho một phân đoạn khán giả."
+            },
+            {
+                q: "Thông tin quan trọng nhất cần có trong Buyer Persona đối với người làm PR là gì?",
+                options: ["Tên gọi", "Màu sắc yêu thích", "Chi tiết về việc sử dụng phương tiện truyền thông (Media use)", "Nơi sinh"],
+                correct: 2,
+                explain: "Tài liệu nhấn mạnh: 'Quan trọng nhất là chi tiết về việc sử dụng phương tiện truyền thông của persona'."
+            },
+            {
+                q: "'Buzz' trong ngành giải trí được định nghĩa như thế nào?",
+                options: ["Tiếng ồn của máy quay phim", "Âm thanh của nhiều người nói chuyện một cách sôi nổi, tích cực", "Sự chỉ trích từ giới phê bình", "Quảng cáo trên TV"],
+                correct: 1,
+                explain: "Buzz là ẩn dụ cho âm thanh của nhiều người đang nói chuyện theo cách sôi nổi và tích cực về khách hàng."
+            },
+            {
+                q: "Sự khác biệt giữa Buzz và Hype là gì?",
+                options: ["Hype là tích cực, Buzz là tiêu cực", "Buzz là sự thật, Hype là sự phóng đại (hyperbole)", "Buzz dành cho TV, Hype dành cho phim", "Không có sự khác biệt"],
+                correct: 1,
+                explain: "Buzz là tích cực và tự nhiên. Hype bắt nguồn từ 'hyperbole' nghĩa là sự phóng đại. Tài liệu khuyên nên tránh Hype."
+            },
+            {
+                q: "Tại sao 'sự xác nhận của bên thứ ba' (third-party endorsement) từ truyền thông lại quan trọng?",
+                options: ["Nó tốn ít tiền hơn", "Nó tạo được nhiều lòng tin từ khán giả hơn là quảng cáo", "Nó dễ kiểm soát hơn", "Nó luôn luôn tích cực"],
+                correct: 1,
+                explain: "Sự xác nhận ngụ ý từ bên thứ ba (nhà báo/truyền thông) đạt được nhiều lòng tin từ khán giả hơn là một mẩu quảng cáo."
+            },
+            {
+                q: "Nguyên tắc quan trọng nhất khi làm việc với một thành viên của giới truyền thông là gì?",
+                options: ["Luôn mời họ đi ăn trưa", "Không bao giờ nói dối (Never lying)", "Gửi quà đắt tiền", "Gọi điện cho họ mỗi ngày"],
+                correct: 1,
+                explain: "Tài liệu nhấn mạnh chiến thuật quan hệ truyền thông là: 'Never lying to a member of the media'."
+            },
+            {
+                q: "Người viết PR nên sử dụng cuốn sách nào làm nguồn chính cho các quyết định về văn phong?",
+                options: ["Từ điển Oxford", "The Associated Press (AP) Stylebook", "The New York Times Manual", "Sách giáo khoa Ngữ văn"],
+                correct: 1,
+                explain: "Mỗi người viết PR nên sở hữu và sử dụng 'The Associated Press Stylebook' làm nguồn chính."
+            },
+            {
+                q: "Khi một tổ chức tin tức được tự do đăng tải thông tin ngay lập tức, thông cáo báo chí sẽ ghi dòng chữ gì?",
+                options: ["DO NOT RELEASE", "HOLD FOR LATER", "FOR IMMEDIATE RELEASE", "TOP SECRET"],
+                correct: 2,
+                explain: "Thông cáo thường ghi: FOR IMMEDIATE RELEASE (Dành cho phát hành ngay lập tức)."
+            },
+            {
+                q: "Theo tài liệu, 'News stimulants' (Chất kích thích tin tức) thường bao gồm những gì?",
+                options: ["Thời tiết và giao thông", "Stars, stars, and $$ (Ngôi sao và Tiền bạc)", "Chính trị và tôn giáo", "Đồ ăn và thức uống"],
+                correct: 1,
+                explain: "Mục 'Writing a News Story' liệt kê News stimulants là: stars, stars, and $$."
+            },
+            {
+                q: "Cấu trúc bài viết tin tức mà PR sử dụng giống với nhà báo là gì?",
+                options: ["Cấu trúc kim tự tháp ngược (Inverted Pyramid)", "Cấu trúc kể chuyện theo trình tự thời gian", "Cấu trúc bài văn nghị luận", "Cấu trúc tiểu thuyết"],
+                correct: 0,
+                explain: "Mặc dù không ghi rõ trong slide này nhưng 'Inverted Pyramid Story Format' nằm trong phần Key Terms, đây là chuẩn của AP Style."
+            },
+            {
+                q: "Việc 'Repurposing' (tái sử dụng) thông cáo báo chí thành nội dung online giúp ích gì?",
+                options: ["Giảm chi phí in ấn", "Giúp khách hàng xuất hiện cao trong kết quả tìm kiếm (SEO)", "Làm hài lòng nhà đầu tư", "Thay thế hoàn toàn website"],
+                correct: 1,
+                explain: "Việc này quan trọng để khách hàng xuất hiện cao trong kết quả tìm kiếm cho các từ khóa liên quan."
+            },
+            {
+                q: "Mục tiêu địa lý (Geographics) cho hầu hết các chương trình truyền hình và phim ảnh là gì?",
+                options: ["Địa phương (Local)", "Toàn quốc (Nationwide)", "Chỉ ở các thành phố lớn", "Chỉ ở nông thôn"],
+                correct: 1,
+                explain: "Mục tiêu địa lý cho hầu hết truyền hình và phim là toàn quốc (nationwide)."
+            },
+            {
+                q: "Trong xếp hạng Nielsen, ngoài xem trực tiếp (Live), họ còn đo lường những gì?",
+                options: ["Live + 24h", "Live + 3 ngày và Live + 7 ngày", "Xem lại trên Youtube", "Xem lậu"],
+                correct: 1,
+                explain: "Nielsen đo lường tổng người xem ở các hạng mục: Live, Live + 3 days, và Live + 7 days."
+            },
+            {
+                q: "Boilerplate trong một thông cáo báo chí là gì?",
+                options: ["Phần tiêu đề giật gân", "Đoạn giới thiệu ngắn về tổ chức/công ty thường đặt ở cuối", "Danh sách các nhà báo cần gửi", "Hình ảnh đính kèm"],
+                correct: 1,
+                explain: "Boilerplate là đoạn văn bản chuẩn giới thiệu về công ty/tổ chức, thường đặt ở cuối thông cáo báo chí."
+            },
+            {
+                q: "Đâu KHÔNG phải là một chiến thuật quan hệ truyền thông tốt?",
+                options: ["Cung cấp thông tin chính xác, đáng tin cậy", "Trở thành nguồn tài nguyên hữu ích cho nhà báo", "Giữ lời hứa cung cấp thông tin", "Làm phiền nhà báo khi họ đang đến hạn chót (deadline)"],
+                correct: 3,
+                explain: "Tài liệu khuyên nên cung cấp thông tin phù hợp cho nhà báo 'on deadline', nghĩa là tôn trọng và hỗ trợ deadline của họ, không phải làm phiền."
+            },
+            {
+                q: "Mục tiêu PR (PR Objectives) cần được xác định như thế nào?",
+                options: ["Chung chung cho tất cả mọi người", "Cụ thể cho từng phân đoạn khán giả quan trọng", "Chỉ tập trung vào lợi nhuận", "Dựa trên sở thích của CEO"],
+                correct: 1,
+                explain: "Mục tiêu PR được chỉ định cụ thể cho từng phân đoạn khán giả quan trọng (specified for each important audience segment)."
+            },
+            {
+                q: "Một ví dụ về mục tiêu PR khác ngoài việc bán vé là gì?",
+                options: ["Thay đổi thái độ tiêu cực", "Sa thải nhân viên", "Mua thêm thiết bị quay phim", "Giảm giá vé"],
+                correct: 0,
+                explain: "Các mục tiêu khác bao gồm: Tạo thái độ tích cực, thay đổi thái độ tiêu cực, tạo buzz, ảnh hưởng đến người định hướng dư luận."
+            },
+            {
+                q: "Tại sao nên suy nghĩ như một nhà xuất bản (publisher) khi làm PR online?",
+                options: ["Để bán sách", "Để cung cấp thông tin thu hút sự quan tâm của khách hàng", "Để cạnh tranh với các tờ báo", "Để tuyển dụng phóng viên"],
+                correct: 1,
+                explain: "Tài liệu khuyên: 'Thinking like a publisher and providing information that interests your customers'."
+            },
+            {
+                q: "Thông cáo báo chí (Media Release) xuất hiện trên đâu là chuyên nghiệp nhất?",
+                options: ["Giấy viết thư tay", "Email cá nhân không có chữ ký", "Tiêu đề thư chính thức của khách hàng (Official letterhead)", "Tin nhắn Facebook"],
+                correct: 2,
+                explain: "Media release appears on a client’s official letterhead or media release stationery."
+            },
+            {
+                q: "Các chiến dịch tiếp thị và quảng bá phim thường được phát triển ở đâu trước khi ra quốc tế?",
+                options: ["Tại Châu Âu", "Tại Mỹ (US)", "Tại Châu Á", "Tại bất kỳ đâu"],
+                correct: 1,
+                explain: "Chiến dịch thường được phát triển ở Mỹ (US) và sau đó thích ứng và triển khai ở các thị trường quốc tế."
+            },
+            {
+                q: "Trong phân đoạn truyền hình, các phân đoạn đều sử dụng yếu tố nào làm yếu tố phụ (secondary element)?",
+                options: ["Thu nhập", "Giới tính (Gender)", "Học vấn", "Tôn giáo"],
+                correct: 1,
+                explain: "Tất cả các phân đoạn truyền hình sử dụng giới tính (gender) làm yếu tố phụ."
+            },
+            {
+                q: "Những câu chuyện tin tức giải trí tích cực thường bắt nguồn từ đâu?",
+                options: ["Tin đồn thất thiệt", "Nội dung do PR tạo ra (PR-generated content)", "Sự tình cờ", "Đối thủ cạnh tranh"],
+                correct: 1,
+                explain: "Các câu chuyện tích cực và bài báo chuyên đề thường bắt nguồn từ nội dung và ý tưởng do PR tạo ra."
+            },
+            {
+                q: "Tại sao cần bao gồm Social Media Links trong thông cáo báo chí?",
+                options: ["Để bài viết dài hơn", "Để kết nối và tăng tương tác trên các nền tảng khác", "Vì quy định bắt buộc", "Để trang trí"],
+                correct: 1,
+                explain: "Nó giúp tận dụng các nền tảng khác để đạt được sự phổ biến (gain popularity) và kết nối."
+            },
+            {
+                q: "Điều gì xảy ra khi phân đoạn khán giả phù hợp biết về một sự kiện giải trí sắp tới?",
+                options: ["Họ sẽ phớt lờ", "Họ có thể được truyền cảm hứng để mua vé hoặc chuyển kênh", "Họ sẽ viết thư phàn nàn", "Họ sẽ tắt tivi"],
+                correct: 1,
+                explain: "Họ có thể được truyền cảm hứng để mua vé (buy tickets) hoặc chuyển kênh (switch channels) đúng lúc."
+            },
+            {
+                q: "Vòng đời của một show truyền hình được tính theo 'Live', 'Live+3' và 'Live+7' để làm gì?",
+                options: ["Để tính lương cho diễn viên", "Để đo lường tổng số người xem (Total viewers) bao gồm cả xem lại", "Để phạt những người xem muộn", "Để biết ai xem tivi đen trắng"],
+                correct: 1,
+                explain: "Để đo lường tổng người xem, bao gồm cả những người xem trực tiếp và những người xem lại trong vòng 3 hoặc 7 ngày sau đó."
+            }
+        ];
+
+        // Biến trạng thái
+        let currentQuestion = 0;
+        let score = 0;
+        const totalQuestions = questions.length;
+
+        // Âm thanh
+        const soundEffect = new Audio("data:audio/wav;base64,UklGRl9vT1BXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); // Short placeholder, will define a real ping below
+        
+        // Tạo âm thanh "Ting" bằng Web Audio API (không cần file ngoài)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSuccessSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playFailSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsGrid = document.getElementById('options-grid');
+        const currentQNum = document.getElementById('current-q');
+        const progressBar = document.getElementById('progress-bar');
+        const feedback = document.getElementById('feedback');
+        const feedbackTitle = document.getElementById('feedback-title');
+        const feedbackContent = document.getElementById('feedback-content');
+        const btnNext = document.getElementById('btn-next');
+        const finalScore = document.getElementById('final-score');
+
+        // Functions
+        function startQuiz() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            startScreen.style.display = 'none';
+            resultScreen.style.display = 'none';
+            quizScreen.style.display = 'flex';
+            currentQuestion = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function goHome() {
+            quizScreen.style.display = 'none';
+            resultScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestion];
+            
+            // Cập nhật UI
+            questionText.textContent = q.q;
+            currentQNum.textContent = currentQuestion + 1;
+            progressBar.style.width = `${((currentQuestion) / totalQuestions) * 100}%`;
+            
+            // Reset Feedback & Buttons
+            feedback.style.display = 'none';
+            feedback.className = 'feedback-area';
+            btnNext.style.display = 'none';
+            
+            // Tạo Options
+            optionsGrid.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, btn) {
+            // Disable all buttons
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => b.disabled = true);
+
+            const q = questions[currentQuestion];
+            const isCorrect = selectedIndex === q.correct;
+
+            if (isCorrect) {
+                // Xử lý đúng
+                score++;
+                btn.classList.add('correct');
+                feedback.classList.add('success');
+                feedbackTitle.textContent = "Chính xác! 🎉";
+                feedbackTitle.style.color = "var(--success)";
+                
+                playSuccessSound();
+                fireConfetti();
+            } else {
+                // Xử lý sai
+                btn.classList.add('wrong');
+                buttons[q.correct].classList.add('correct'); // Hiện đáp án đúng
+                feedback.classList.add('error');
+                feedbackTitle.textContent = "Sai rồi! 😅";
+                feedbackTitle.style.color = "var(--error)";
+                
+                playFailSound();
+            }
+
+            // Hiện giải thích
+            feedbackContent.textContent = q.explain;
+            feedback.style.display = 'block';
+            
+            // Hiện nút Next hoặc Finish
+            btnNext.style.display = 'block';
+            if (currentQuestion === totalQuestions - 1) {
+                btnNext.textContent = "Xem kết quả 🏆";
+            } else {
+                btnNext.textContent = "Câu tiếp theo ➜";
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < totalQuestions) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            quizScreen.style.display = 'none';
+            resultScreen.style.display = 'flex';
+            finalScore.textContent = `${score}/${totalQuestions}`;
+            
+            if (score > 20) {
+                fireConfetti();
+                setTimeout(fireConfetti, 500);
+            }
+        }
+
+        // Hiệu ứng pháo hoa
+        function fireConfetti() {
+            var count = 200;
+            var defaults = {
+                origin: { y: 0.7 }
+            };
+
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55 });
+            fire(0.2, { spread: 60 });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+    </script>
+</body>
+</html>
